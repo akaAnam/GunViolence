@@ -1,6 +1,6 @@
 # Gun Violence in the US
 
-This paper was written with the intention to unearth the impacts of state-by-state gun legislation on gun violence in the US. 
+This paper was written with the intention to unearth the impacts of state-by-state gun legislation on gun violence in the US.
 
 ## Introduction 
 
@@ -13,3 +13,11 @@ Data containing details on gun violence incidents (GVIs), state-by-state gun law
   2. Is there a relationship between gun law categories and number of gun violence incidents? And can these relationships be used to        predict future gun violence incidents?
   
   3. Is there a relationship between political parties with partisan control of the state Senate and incidents of gun violence?
+
+## Code 
+
+The code for reasearch Questions 2 and 3 and can be found in the GunLawCategories.Rmd and GunLawsPolParty.Rmd files respectively. 
+
+## Findings and Results 
+
+Gun Violence in the US.pdf contains the final report containing all discoveries, findings, statistical methods and more. 

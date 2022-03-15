@@ -1,0 +1,671 @@
+---
+title: "GunLawCategories"
+author: "Anam Khan"
+date: "11/7/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This file contains general EDA and code to support Research Question #2
+
+```{r}
+# Read Dataset in 
+gunLaws <- read.csv("gunLawsBU.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+head(gunLaws)
+
+# Read in codebook File
+gunLawsCode <- read.csv("codeBook.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+#head(gunLawsCode)
+
+# subset DF for years 2013 - 2017
+yearRange <- c(2013,2014,2015,2016,2017,2018)
+gunLaws <- gunLaws[gunLaws$year %in% yearRange,]
+
+gunLawCategories <- as.character(unique(gunLawsCode$Category))
+
+# Vector of variables for each Category 
+DealerReg <- gunLawsCode[gunLawsCode$Category == gunLawCategories[1], "Variable.Name"]
+BuyerReg <- gunLawsCode[gunLawsCode$Category == gunLawCategories[2], "Variable.Name"]
+ProbForHighRiskPosession<- gunLawsCode[gunLawsCode$Category == gunLawCategories[3], "Variable.Name"]
+BackgroundChecks<- gunLawsCode[gunLawsCode$Category == gunLawCategories[4], "Variable.Name"]
+AmmoReg<- gunLawsCode[gunLawsCode$Category == gunLawCategories[5], "Variable.Name"]
+PossessionReg<- gunLawsCode[gunLawsCode$Category == gunLawCategories[6], "Variable.Name"]
+ConcealedCarry<- gunLawsCode[gunLawsCode$Category == gunLawCategories[7], "Variable.Name"]
+AssaultWeapLrgCapMags<- gunLawsCode[gunLawsCode$Category == gunLawCategories[8], "Variable.Name"]
+ChildAccessPrev<- gunLawsCode[gunLawsCode$Category == gunLawCategories[9], "Variable.Name"]
+GunTrafficking<- gunLawsCode[gunLawsCode$Category == gunLawCategories[10], "Variable.Name"]
+StandUrGround<- gunLawsCode[gunLawsCode$Category == gunLawCategories[11], "Variable.Name"]
+Preemption<- gunLawsCode[gunLawsCode$Category == gunLawCategories[12], "Variable.Name"]
+Immunity<- gunLawsCode[gunLawsCode$Category == gunLawCategories[13], "Variable.Name"]
+DomesticViolence<- gunLawsCode[gunLawsCode$Category == gunLawCategories[14], "Variable.Name"]
+
+# New Empty Dataframe: Gun Law Totals for all States by Category 
+gunLawTot.Category <- data.frame(
+  year = yearRange, DealerReg = 0,BuyerReg = 0,ProbForHighRiskPosession = 0,BackgroundChecks = 0,AmmoReg = 0,
+  PossessionReg = 0,ConcealedCarry = 0,AssaultWeapLrgCapMags = 0,ChildAccessPrev = 0,
+  GunTrafficking = 0,StandUrGround = 0,Preemption = 0,Immunity = 0,DomesticViolence = 0
+)
+
+# Law Sums DF
+gunLaws.no.State <- gunLaws[,-1]
+gunLaws.no.State <- gunLaws.no.State[-136]
+lawSums <- as.data.frame(colSums(gunLaws.no.State[gunLaws$year == "2013",-1]))
+lawSums$new14 <- colSums(gunLaws.no.State[gunLaws$year == "2014",-1])
+lawSums$new15<- colSums(gunLaws.no.State[gunLaws$year == "2015",-1])
+lawSums$new16<- colSums(gunLaws.no.State[gunLaws$year == "2016",-1])
+lawSums$new17<- colSums(gunLaws.no.State[gunLaws$year == "2017",-1])
+lawSums$new18<- colSums(gunLaws.no.State[gunLaws$year == "2018",-1])
+colnames(lawSums) <- c("2013","2014","2015","2016","2017","2018")
+gunLawTot.Category
+head(lawSums)
+
+# Fill in empty DF
+gunLawTot.Category$DealerReg <- colSums(lawSums[rownames(lawSums) %in% DealerReg,])
+gunLawTot.Category$BuyerReg <- colSums(lawSums[rownames(lawSums) %in% BuyerReg,])
+gunLawTot.Category$ProbForHighRiskPosession <- colSums(lawSums[rownames(lawSums) %in% ProbForHighRiskPosession,])
+gunLawTot.Category$BackgroundChecks <- colSums(lawSums[rownames(lawSums) %in% BackgroundChecks,])
+gunLawTot.Category$AmmoReg <- colSums(lawSums[rownames(lawSums) %in% AmmoReg,])
+gunLawTot.Category$PossessionReg <- colSums(lawSums[rownames(lawSums) %in% PossessionReg,])
+gunLawTot.Category$ConcealedCarry <- colSums(lawSums[rownames(lawSums) %in% ConcealedCarry,])
+gunLawTot.Category$AssaultWeapLrgCapMags <- colSums(lawSums[rownames(lawSums) %in% AssaultWeapLrgCapMags,])
+gunLawTot.Category$ChildAccessPrev <- colSums(lawSums[rownames(lawSums) %in% ChildAccessPrev,])
+gunLawTot.Category$GunTrafficking <- colSums(lawSums[rownames(lawSums) %in% GunTrafficking,])
+gunLawTot.Category$StandUrGround <- colSums(lawSums[rownames(lawSums) %in% StandUrGround,])
+gunLawTot.Category$Preemption <- colSums(lawSums[rownames(lawSums) %in% Preemption,])
+gunLawTot.Category$Immunity <- colSums(lawSums[rownames(lawSums) %in% Immunity,])
+gunLawTot.Category$DomesticViolence <- colSums(lawSums[rownames(lawSums) %in% DomesticViolence,])
+gunLawTot.Category
+
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+colnames(gunLawTot.Category)
+
+# Data Prep for Vis
+gltc <- gunLawTot.Category %>%
+  select(year, DealerReg,BuyerReg,ProbForHighRiskPosession,BackgroundChecks,AmmoReg,PossessionReg,ConcealedCarry,AssaultWeapLrgCapMags,ChildAccessPrev,GunTrafficking,StandUrGround,Preemption,Immunity,DomesticViolence) %>%
+  gather(key = "Gun Law Category", value = "Value", -year)
+head(gltc)
+
+# Vis
+ggplot(gltc, aes(x=year, y=Value)) + 
+  geom_line(aes(color = `Gun Law Category`)) +
+  ggtitle("USA Total Gun Laws by Category (2013 - 2018)") +
+  xlab("Year") +
+  ylab("Total Number of Gun Laws") + 
+  theme_minimal()
+
+
+gltc18 <- gltc[gltc$year == "2018",]
+gltc16 <- gltc[gltc$year == "2016",]
+gltc14 <- gltc[gltc$year == "2014",]
+
+unique(gltc18$`Value`)
+
+plot18 <- ggplot(gltc18, aes(x = `Gun Law Category`, y = Value)) + 
+  geom_point(aes(color = `Gun Law Category`), size = 3) + 
+  geom_label(label = unique(gltc18$`Value`), size = 2.5, nudge_x = .35, nudge_y = .25, check_overlap = T) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust = 1), 
+        legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid")) + 
+  ggtitle("Total Gun Laws by Category 2018") 
+
+plot16 <- ggplot(gltc16, aes(x = `Gun Law Category`, y = Value)) + 
+  geom_point(aes(color = `Gun Law Category`), size = 3) + 
+  geom_label(label = unique(gltc16$`Value`), size = 2.5, nudge_x = .35, nudge_y = .25, check_overlap = T) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust = 1), 
+        legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid")) + 
+  ggtitle("Total Gun Laws by Category 2016") 
+
+plot14 <- ggplot(gltc14, aes(x = `Gun Law Category`, y = Value)) + 
+  geom_point(aes(color = `Gun Law Category`), size = 3) + 
+  geom_label(label = unique(gltc14$`Value`), size = 2.5, nudge_x = .35, nudge_y = .25, check_overlap = T) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust = 1), 
+        legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid")) + 
+  ggtitle("Total Gun Laws by Category 2014") 
+
+plot14
+plot16
+plot18
+
+library(animation)
+animation::saveGIF(expr = {
+  plot(plot14)
+  plot(plot16)
+  plot(plot18)}, 
+  movie.name = "GLawsxCategories_years.gif")
+```
+
+```{r}
+#gunLaws
+#gunLawTot.Category
+
+## -----------------------------------------------------------
+## DF: GUN LAWS BY CATEGORY BY YEAR FOR EACH STATE 2013-2018
+## -----------------------------------------------------------
+for (i in 1:nrow(gunLaws)){
+    gunLaws$DealerReg[i] <- sum(gunLaws[i,colnames(gunLaws) %in% DealerReg])
+    gunLaws$BuyerReg[i] <- sum(gunLaws[i,colnames(gunLaws) %in% BuyerReg])
+    gunLaws$ProbForHighRiskPosession[i] <- sum(gunLaws[i,colnames(gunLaws) %in% ProbForHighRiskPosession])
+    gunLaws$BackgroundChecks[i] <- sum(gunLaws[i,colnames(gunLaws) %in% BackgroundChecks])
+    gunLaws$AmmoReg[i] <- sum(gunLaws[i,colnames(gunLaws) %in% AmmoReg])
+    gunLaws$PossessionReg[i] <- sum(gunLaws[i,colnames(gunLaws) %in% PossessionReg])
+    gunLaws$ConcealedCarry[i] <- sum(gunLaws[i,colnames(gunLaws) %in% ConcealedCarry])
+    gunLaws$AssaultWeapLrgCapMags[i] <- sum(gunLaws[i,colnames(gunLaws) %in% AssaultWeapLrgCapMags])
+    gunLaws$ChildAccessPrev[i] <- sum(gunLaws[i,colnames(gunLaws) %in% ChildAccessPrev])
+    gunLaws$GunTrafficking[i] <- sum(gunLaws[i,colnames(gunLaws) %in% GunTrafficking])
+    gunLaws$StandUrGround[i] <- sum(gunLaws[i,colnames(gunLaws) %in% StandUrGround])
+    gunLaws$Preemption[i] <- sum(gunLaws[i,colnames(gunLaws) %in% Preemption])
+    gunLaws$Immunity[i] <- sum(gunLaws[i,colnames(gunLaws) %in% Immunity])
+    gunLaws$DomesticViolence[i] <- sum(gunLaws[i,colnames(gunLaws) %in% DomesticViolence])
+}
+
+keepCols <- c(1,2,137:151)
+gunLawsCatStYr <- gunLaws[,keepCols]
+
+head(gunLawsCatStYr18 <- gunLawsCatStYr[gunLawsCatStYr$year == "2018",])
+
+plot(x = gunLawsCatStYr$year, y=gunLawsCatStYr$lawtotal, type = "l")
+
+gunLawsCatStYr[75:78,]
+
+NorthEast <- c("Vermont", "Connecticut", "Delaware", "Pennsylvania", "Maine", "Massachusetts", "Maryland", "New Hampshire", "New Jersey", "New York", "Rhode Island")
+
+MidWest <- c("Minnesota", "North Dakota", "South Dakota", "Iowa", "Nebraska", "Wisconsin", "Missouri", "Indiana", "Illinois", "Michigan", "Ohio", "Kansas")
+
+West <- c("Hawaii", "Alaska", "Idaho", "Montana", "Colorado", "Wyoming", "Utah", "Nevada", "Arizona", "California", "Washington", "Oregon", "New Mexico")
+
+South <- c("West Virginia", "Virginia", "Texas", "Tennessee", "South Carolina", "Oklahoma", "North Carolina", "Mississippi", "Maryland", "Louisiana", "Kentucky", "Georgia", "Florida", "Delaware", "Arkansas", "Alabama")
+
+unique(gunLawsCatStYr$state)
+
+NE <- gunLawsCatStYr[gunLawsCatStYr$state %in% NorthEast,]
+MW <- gunLawsCatStYr[gunLawsCatStYr$state %in% MidWest,]
+W <- gunLawsCatStYr[gunLawsCatStYr$state %in% West,]
+S <- gunLawsCatStYr[gunLawsCatStYr$state %in% South,]
+
+NEplot <- ggplot(NE, aes(x = year, y = lawtotal)) + 
+  geom_line(aes(color = state), lwd=.5) +
+  geom_text(data = subset(NE, year == "2018"), aes(label = state, color = state), hjust=-.1, size = 3.5) +
+  theme(legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "lightgray")) + 
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the Northeast") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year") 
+
+MWplot <- ggplot(MW, aes(x = year, y = lawtotal)) + 
+  geom_line(aes(color = state), lwd=.5) +
+  geom_text(data = subset(MW, year == "2018"), aes(label = state, color = state), hjust=-.1, size = 3.5) +
+  theme(legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "lightgray")) + 
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the Midwest") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year")
+
+
+Wplot <- ggplot(W, aes(x = year, y = lawtotal)) + 
+  geom_line(aes(color = state), lwd=.5) +
+  geom_text(data = subset(W, year == "2018"), aes(label = state, color = state), hjust=-.1, size = 3.5) +
+  theme(legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "lightgray")) + 
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the West") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year")
+
+
+Splot <- ggplot(S, aes(x = year, y = lawtotal)) + 
+  geom_line(aes(color = state), lwd=.5) +
+  geom_text(data = subset(S, year == "2018"), aes(label = state, color = state), hjust=-.1, size = 3.5) +
+  theme(legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "lightgray")) + 
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the South") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year")
+
+
+
+Splot2 <- ggplot(S, aes(x = year, y = lawtotal, fill =state)) + 
+  geom_bar(stat = "identity", position = "stack", color = "black", lwd = .1) +
+  geom_text(aes(label = paste(format(state, nsmall=0), lawtotal)), position = position_stack(vjust=.5), size=4, color ="white") +
+  theme(legend.position = "none",panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "white")) +
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the South") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year")
+
+NEplot2 <- ggplot(NE, aes(x = year, y = lawtotal, fill =state)) + 
+  geom_bar(stat = "identity", position = "stack", color = "black", lwd = .1) +
+  geom_text(aes(label = paste(format(state, nsmall=0), lawtotal)), position = position_stack(vjust=.6), size=4, color ="white") +
+  theme(legend.position = "none",panel.background = element_rect(fill = "white",
+                                colour = "black",
+                                size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.3, linetype = 'dotted',
+                                colour = "white")) +
+  scale_x_discrete(limits = c(2013, 2014, 2015, 2016, 2017, 2018,2019)) + 
+  ggtitle("Total US Gun Laws in the North East") + 
+  ylab("Total Gun Laws") + 
+  xlab("Year")
+
+NEplot
+MWplot
+Wplot
+Splot
+Splot2
+NEplot2
+```
+
+```{r}
+#--------------------------------------
+## GUN VIOLENCE IN 2018 AND GUN LAWS ##
+#--------------------------------------
+GunViolence18 <- read.csv("gun_violence_data_2018_anam.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+#head(GunViolence18)
+ 
+#gunLawsCatStYr18
+
+# Going to have to remove DC from this lol
+# Removing DC because we do  not have DC gun law Data
+length(unique(GunViolence18$state))
+GunViolence18 <- GunViolence18[GunViolence18$state != "District of Columbia",]
+
+stateList <- unique(gunLawsCatStYr18$state)
+
+str(GunViolence18)
+str(gunLawsCatStYr18)
+
+GunViolence18[3] <- lapply(GunViolence18[3], as.character)
+gunLawsCatStYr18[1] <- lapply(gunLawsCatStYr18[1], as.character)
+
+gunLawsCatStYr18$NumGVIncidents <- 0 
+gunLawsCatStYr18$NumKilled <- 0 
+
+# Add number of GV incidents and number killed to the gunLaws DF
+for (i in 1:nrow(gunLawsCatStYr18)){
+  numIncidents <- nrow(GunViolence18[GunViolence18$state == gunLawsCatStYr18$state[i],])
+  gunLawsCatStYr18$NumGVIncidents[i] <- numIncidents
+  
+  numKilled <- sum(GunViolence18[GunViolence18$state == gunLawsCatStYr18$state[i],"n_killed"])
+  gunLawsCatStYr18$NumKilled[i] <- numKilled
+}
+
+# Add % of 2018 GVI column
+TotalGVI <- sum(gunLawsCatStYr18$NumGVIncidents)
+gunLawsCatStYr18$prcntGVIncidents <- round(gunLawsCatStYr18$NumGVIncidents/TotalGVI,2)*100
+
+plot(gunLawsCatStYr18$lawtotal, gunLawsCatStYr18$prcntGVIncidents, xlab = "Total Number of Laws", 
+     ylab = "% Gun Violence Incidents", main = "Total Gun Laws by % GVI")
+
+plot(gunLawsCatStYr18$DomesticViolence, gunLawsCatStYr18$prcntGVIncidents, xlab = "Total Number of Domestic Violence Laws", ylab = "% Gun Violence Incidents", main = "Total DV Laws by % GVI")
+
+# Scatterplots to visualize relationships 
+pairs(prcntGVIncidents~DomesticViolence + DealerReg+BuyerReg+BackgroundChecks+AmmoReg+PossessionReg+ChildAccessPrev+NumKilled, data = gunLawsCatStYr18, lower.panel = NULL)
+# DV, possessionreg, buyer, dealer, background, child access, 
+
+pairs(NumGVIncidents~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity+NumKilled, data = gunLawsCatStYr18, lower.panel = NULL)
+
+pairs(NumKilled~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity, data = gunLawsCatStYr18, lower.panel = NULL)
+
+## CORRELATION MATRICES
+library(corrplot)
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+M <- cor(gunLawsCatStYr18[3:20])
+corrplot(M, col = col(200),
+         tl.cex = .7, tl.col = "black", type = "upper")
+```
+
+```{r}
+
+#--------------------------------------
+## GUN VIOLENCE IN 2017 AND GUN LAWS ##
+#--------------------------------------
+GunViolence17 <- read.csv("gun_violence_data_2017_anam.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+#head(GunViolence17)
+
+(gunLawsCatStYr17 <- gunLawsCatStYr[gunLawsCatStYr$year == "2017",])
+#gunLawsCatStYr17
+
+# Going to have to remove DC from this lol
+# Removing DC because we do  not have DC gun law Data
+length(unique(GunViolence17$state))
+GunViolence17 <- GunViolence17[GunViolence17$state != "District of Columbia",]
+
+stateList <- unique(gunLawsCatStYr17$state)
+
+str(GunViolence17)
+str(gunLawsCatStYr17)
+
+GunViolence17[3] <- lapply(GunViolence17[3], as.character)
+gunLawsCatStYr17[1] <- lapply(gunLawsCatStYr17[1], as.character)
+
+gunLawsCatStYr17$NumGVIncidents <- 0 
+gunLawsCatStYr17$NumKilled <- 0 
+
+# Add number of GV incidents and number killed to the gunLaws DF
+for (i in 1:nrow(gunLawsCatStYr17)){
+  numIncidents <- nrow(GunViolence17[GunViolence17$state == gunLawsCatStYr17$state[i],])
+  gunLawsCatStYr17$NumGVIncidents[i] <- numIncidents
+  
+  numKilled <- sum(GunViolence18[GunViolence18$state == gunLawsCatStYr17$state[i],"n_killed"])
+  gunLawsCatStYr17$NumKilled[i] <- numKilled
+}
+
+# Add % of 2017 GVI column
+TotalGVI <- sum(gunLawsCatStYr17$NumGVIncidents)
+gunLawsCatStYr17$prcntGVIncidents <- (gunLawsCatStYr17$NumGVIncidents/TotalGVI)*100
+gunLawsCatStYr17$prcntGVIncidents <- round(gunLawsCatStYr17$prcntGVIncidents, 2)
+
+plot(gunLawsCatStYr17$lawtotal, gunLawsCatStYr17$prcntGVIncidents, xlab = "Total Number of Laws", 
+     ylab = "% Gun Violence Incidents", main = "Total Gun Laws by % GVI", pch = 19)
+lines(lowess(gunLawsCatStYr17$lawtotal, gunLawsCatStYr17$prcntGVIncidents), col = "blue")
+
+plot(gunLawsCatStYr17$lawtotal, gunLawsCatStYr17$NumGVIncidents, xlab = "Total Number of Laws", 
+     ylab = "Gun Violence Incidents", main = "Total Gun Laws by GVI")
+lines(lowess(gunLawsCatStYr17$lawtotal, gunLawsCatStYr17$NumGVIncidents), col = "blue")
+
+plot(gunLawsCatStYr17$DomesticViolence, gunLawsCatStYr17$prcntGVIncidents, xlab = "Total Number of Domestic Violence Laws", ylab = "% Gun Violence Incidents", main = "Total DV Laws by % GVI", pch=19)
+lines(lowess(gunLawsCatStYr17$DomesticViolence, gunLawsCatStYr17$prcntGVIncidents), col = "blue")
+
+library(car)
+scatterplot(prcntGVIncidents ~ lawtotal, data = gunLawsCatStYr17, col = "blue", main = "Total Gun Laws by % GVI",xlab = "Total Number of Laws", ylab = "% Gun Violence Incidents" )
+```
+
+```{r}
+# Standardize the Gun Laws by Cat by State for 2017 Data 
+#gunLawsCatStYr17
+
+# want to standardize cols 3 - 19
+
+# copy original DF into new one and lapply
+standardize_gunLawsCatStYr17 <- gunLawsCatStYr17
+standardize_gunLawsCatStYr17[3:19] <- lapply(standardize_gunLawsCatStYr17[3:19], scale)
+
+## VIS CORRELATIONS ##
+#--------------------#
+
+# Scatterplots to visualize relationships 
+pairs(prcntGVIncidents~DomesticViolence + DealerReg+BuyerReg+BackgroundChecks+AmmoReg+PossessionReg+ChildAccessPrev+NumKilled, data = standardize_gunLawsCatStYr17, lower.panel = NULL)
+# DV, possessionreg, buyer, dealer, background, child access, 
+
+plot(standardize_gunLawsCatStYr17$DomesticViolence, standardize_gunLawsCatStYr17$NumGVIncidents, xlab = "Total Number of Domestic Violence Laws", ylab = "Gun Violence Incidents", main = "Total DV Laws by Num GVI")
+
+pairs(NumGVIncidents~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity+NumKilled, data = standardize_gunLawsCatStYr17, lower.panel = NULL)
+
+pairs(NumKilled~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity, data = standardize_gunLawsCatStYr17, lower.panel = NULL)
+
+## CORRELATION MATRICES
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+#standardize_gunLawsCatStYr17
+M17 <- cor(gunLawsCatStYr17[3:20])
+corrplot(M, col = col(200),
+         tl.cex = .7, tl.col = "black", type = "upper")
+
+# Customize upper panel
+upper.panel<-function(x, y){
+  points(x,y, pch = 19)
+  r <- round(cor(x, y), digits=2)
+  txt <- paste0("R = ", r)
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  text(0.5, 0.8, txt, col = "red", cex=1.4)
+}
+pairs(NumGVIncidents~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity+NumKilled, data = standardize_gunLawsCatStYr17, lower.panel = NULL, upper.panel = upper.panel)
+```
+
+```{r}
+# ---------------------------#
+# MULTIPLE LINEAR REGRESSION #
+# ---------------------------#
+
+# -------#
+# MODELS #
+# -------#
+
+standardize_gunLawsCatStYr17[1] <- lapply(standardize_gunLawsCatStYr17[1], as.factor)
+
+# model to fit Number of GV Incidents by ALL categories 
+model17.1 <- lm(NumGVIncidents ~ DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity, data = standardize_gunLawsCatStYr17, na.action =na.exclude)
+summary(model17.1)
+
+#     high p-value variables:
+#     DealerReg, BuyerReg, ProbForHighRiskPosession, AmmoReg, Immunity
+
+
+# trying to make a better model 
+model17.1b <- lm(NumGVIncidents ~ DomesticViolence +ConcealedCarry+PossessionReg+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption,
+                 data = standardize_gunLawsCatStYr17, na.action =na.exclude)
+summary(model17.1b)
+
+
+# only significant predictors
+model17.1c <- lm(NumGVIncidents ~ ConcealedCarry+PossessionReg+GunTrafficking+StandUrGround+Preemption,
+                 data = standardize_gunLawsCatStYr17, na.action =na.exclude)
+summary(model17.1c)
+
+
+## simple linear regression ##
+## ------------------------ ##
+## MODELS 1D - 1K
+
+# concealed carry
+model17.1d <- lm(NumGVIncidents ~ ConcealedCarry, data=standardize_gunLawsCatStYr17)
+summary(model17.1d)
+
+# Posession Reg
+model17.1e <- lm(NumGVIncidents ~ PossessionReg, data=standardize_gunLawsCatStYr17)
+summary(model17.1e)
+
+# concealed carry
+model17.1f <- lm(NumGVIncidents ~ GunTrafficking, data=standardize_gunLawsCatStYr17)
+summary(model17.1f)
+
+# DV
+model17.1g <- lm(NumGVIncidents ~ DomesticViolence, data=standardize_gunLawsCatStYr17)
+summary(model17.1g)
+
+# child access prevention
+model17.1h <- lm(NumGVIncidents ~ ChildAccessPrev, data=standardize_gunLawsCatStYr17)
+summary(model17.1h)
+
+# assault weapons and large mag capacity
+model17.1i <- lm(NumGVIncidents ~ AssaultWeapLrgCapMags, data=standardize_gunLawsCatStYr17)
+summary(model17.1i)
+
+# ammo reg
+model17.1j <- lm(NumGVIncidents ~ AmmoReg, data=standardize_gunLawsCatStYr17)
+summary(model17.1j)
+
+# dealer reg
+model17.1k <- lm(NumGVIncidents ~ DealerReg, data=standardize_gunLawsCatStYr17)
+summary(model17.1k)
+
+
+## Num Killed as predictor
+## -----------------------
+# model to fit Number killed by all categories 
+model17.2 <- lm(NumKilled ~DomesticViolence + DealerReg+BuyerReg+ProbForHighRiskPosession+ConcealedCarry+BackgroundChecks+AmmoReg+PossessionReg+AssaultWeapLrgCapMags+ChildAccessPrev+GunTrafficking+StandUrGround+Preemption+Immunity, data = standardize_gunLawsCatStYr17, na.action =na.exclude)
+summary(model17.2)
+
+# only significant predictors
+model17.2b <- lm(NumKilled ~PossessionReg+Preemption+Immunity, data = standardize_gunLawsCatStYr17, na.action =na.exclude)
+summary(model17.2b)
+
+```
+
+```{r}
+# ------------#
+# PREDICTIONS #
+# ------------#
+
+# Training and Test SET: 80/20 split 
+trainingSize <- floor(nrow(standardize_gunLawsCatStYr17)*.80)
+testSize <- nrow(standardize_gunLawsCatStYr17) - trainingSize
+
+# sample of row nums 
+set.seed(123)
+trainingSample <- sample(nrow(standardize_gunLawsCatStYr17), trainingSize, replace = F)
+
+# get rows and make training set 
+trainingSET <- standardize_gunLawsCatStYr17[trainingSample,]
+
+# get Test Set
+testSET <- standardize_gunLawsCatStYr17[-trainingSample,]
+
+
+## Making predictions 
+# num GVI - multiple regression
+prediction1 <- predict(model17.1, testSET)
+prediction2 <- predict(model17.1c, testSET)
+
+# num GVI - simple regression - 1 var
+prediction4 <- predict(model17.1d, testSET)
+prediction5 <- predict(model17.1e, testSET)
+prediction6 <- predict(model17.1f, testSET)
+prediction7 <- predict(model17.1g, testSET)
+prediction8 <- predict(model17.1h, testSET)
+prediction9 <- predict(model17.1i, testSET)
+prediction10 <- predict(model17.1j, testSET)
+prediction11 <- predict(model17.1k, testSET)
+
+# num Killed - multiple
+prediction3 <- predict(model17.2b, testSET)
+
+
+# Model performance 
+library(caret)
+RMSE(prediction1, testSET$NumGVIncidents)
+RMSE(prediction2, testSET$NumGVIncidents)
+R2(prediction2, testSET$NumGVIncidents)
+RMSE(prediction3, testSET$NumKilled)
+
+# num GVI - simple regression - 1 var
+RMSE(prediction4, testSET$NumGVIncidents)  # good model performance 
+R2(prediction4, testSET$NumGVIncidents)  
+MAE(prediction4, testSET$NumGVIncidents)
+
+RMSE(prediction5, testSET$NumGVIncidents)
+R2(prediction5, testSET$NumGVIncidents)
+MAE(prediction5, testSET$NumGVIncidents)
+
+RMSE(prediction6, testSET$NumGVIncidents)
+R2(prediction6, testSET$NumGVIncidents)
+MAE(prediction6, testSET$NumGVIncidents)
+
+RMSE(prediction7, testSET$NumGVIncidents)
+R2(prediction7, testSET$NumGVIncidents)
+MAE(prediction7, testSET$NumGVIncidents)
+
+RMSE(prediction8, testSET$NumGVIncidents)
+R2(prediction8, testSET$NumGVIncidents)
+MAE(prediction8, testSET$NumGVIncidents)
+
+RMSE(prediction9, testSET$NumGVIncidents)
+R2(prediction9, testSET$NumGVIncidents)
+MAE(prediction9, testSET$NumGVIncidents)
+
+RMSE(prediction10, testSET$NumGVIncidents)
+R2(prediction10, testSET$NumGVIncidents)
+MAE(prediction10, testSET$NumGVIncidents)
+
+RMSE(prediction11, testSET$NumGVIncidents)
+R2(prediction11, testSET$NumGVIncidents)
+MAE(prediction11, testSET$NumGVIncidents)
+
+
+
+
+#Visualize 
+ggplot(standardize_gunLawsCatStYr17, aes(y=NumGVIncidents, x=ConcealedCarry)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(standardize_gunLawsCatStYr17, aes(y=NumGVIncidents, x=PossessionReg)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(standardize_gunLawsCatStYr17, aes(y=NumGVIncidents, x=DealerReg)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(standardize_gunLawsCatStYr17, aes(y=NumGVIncidents, x=GunTrafficking)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+
+```
+
+
+Comparing Gun Violence in 2014 and 2018 with number of Concealed Carry Laws
+```{r}
+#--------------------------------------
+## GUN VIOLENCE IN 2017 AND GUN LAWS ##
+#--------------------------------------
+GunViolence14 <- read.csv("gun-violence_data_2014_anam.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+#head(GunViolence14) 
+
+gunLawsCatStYr14 <- gunLawsCatStYr[gunLawsCatStYr$year == "2014",]
+
+# Going to have to remove DC from this lol
+# Removing DC because we do  not have DC gun law Data
+length(unique(GunViolence14$state))
+GunViolence14 <- GunViolence14[GunViolence14$state != "District of Columbia",]
+
+GunViolence14[3] <- lapply(GunViolence14[3], as.character)
+gunLawsCatStYr14[1] <- lapply(gunLawsCatStYr14[1], as.character)
+
+gunLawsCatStYr14$NumGVIncidents <- 0 
+gunLawsCatStYr14$NumKilled <- 0 
+
+# Add number of GV incidents to the gunLaws DF
+for (i in 1:nrow(gunLawsCatStYr14)){
+  numIncidents <- nrow(GunViolence14[GunViolence14$state == gunLawsCatStYr14$state[i],])
+  gunLawsCatStYr14$NumGVIncidents[i] <- numIncidents
+  
+  numKilled <- sum(GunViolence14[GunViolence14$state == gunLawsCatStYr14$state[i],"n_killed"])
+  gunLawsCatStYr14$NumKilled[i] <- numKilled
+}
+
+gunLawsCatStYr14
+
+hist(gunLawsCatStYr14$ConcealedCarry)
+hist(gunLawsCatStYr17$ConcealedCarry)
+
+hist(gunLawsCatStYr14$NumGVIncidents, breaks = 4)
+hist(gunLawsCatStYr17$NumGVIncidents, breaks = 4)
+
+plot(gunLawsCatStYr14$ConcealedCarry,gunLawsCatStYr14$NumGVIncidents)
+plot(gunLawsCatStYr17$ConcealedCarry,gunLawsCatStYr17$NumGVIncidents)
+```
+

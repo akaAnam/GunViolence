@@ -1,0 +1,307 @@
+---
+title: "Gun Laws"
+author: "Anam Khan"
+date: "10/22/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+# This file contains general EDA and code to support Research Question #3
+
+### Reading in gun law by state Data
+```{r}
+library(ggplot2)
+library(dplyr)
+library(randomcoloR)
+
+###############################################
+##     STATE FIREARM LAWS NATIONAL DATA      ##
+## http://www.statefirearmlaws.org/resources ##
+###############################################
+
+# Read Dataset in 
+gunLaws <- read.csv("gunLawsBU.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+# head(gunLaws)
+
+# Look at data types
+str(gunLaws)
+states <- levels(gunLaws$state)
+
+# For each row, get the total of all gun laws for that state for that year
+for (i in 1:nrow(gunLaws)){
+  gunLaws$total[i] <- sum(gunLaws[i, 3:137])
+}
+
+# Subset the DF to only have the State, Year, and Totals
+wantCols <- c(1,2,138)
+# gunLaws[,wantCols]
+
+# Split the OG dataset into 50 smaller data sets (years and totals by ST)
+splitBySt <- split(gunLaws, gunLaws$state)
+length(splitBySt)
+ 
+# random list of 50 colors 
+myColors <- randomColor(50)
+
+# Getting total number of laws for a random state (MD)
+MD <- as.data.frame(splitBySt["Maryland"])
+MD[MD$Maryland.year == "2018", "Maryland.total"]
+
+# loop through each state and plot its laws
+# for (i in 1:length(splitBySt)){
+#   new <- data.frame(splitBySt[i])
+#   new <- new[,wantCols]
+#   plot(new[,2], new[,3],
+#       type = "l", pch = 19, lwd =2, col = myColors[i],
+#       main = new[1,1], xlab = "Year", ylab = "Number of Laws/Provisions")
+# 
+# }
+
+```
+
+# Mapping Gun Violence Incidents 
+```{r}
+##############################################
+##      US MASS SHOOTINGS 1982 - 2021       ##
+## https://data.world/thebleak/thebleak13s1 ##
+##############################################
+
+# Read Dataset in 
+massShootings <- read.csv("Mother Jones US Mass Shootings 1982_2021.csv", header = TRUE, na.strings = c("", " ", "N/A"))
+head(massShootings)
+table(massShootings$state)
+
+# Split OG DF into dataframes by state
+massShootings_split <- split(massShootings, massShootings$state)
+# 37 states are accounted for here
+length(massShootings_split)
+# head(massShootings_split)
+
+# Get the number of mass shootings per state
+numShootins_State <- sapply(massShootings_split, nrow)
+# Call number mass shooting for any random state 
+numShootins_State["Florida"]
+
+library(ggmap)
+# Map of all mass shootings
+qmplot(longitude, latitude, data = massShootings, colour = I('red')) 
+
+# All mass shooting without Hawaii (1 data point)
+massShootings_xHawaii <- massShootings[-95,]
+qmplot(longitude, latitude, data = massShootings_xHawaii, colour = I('red')) 
+
+# California
+# caliDF
+# typeof(caliDF)
+# qmplot(California.longitude, California.latitude, data = caliDF , colour = I('red'),  size = I(2))
+
+# Florida 
+floridaDF <- as.data.frame(massShootings_split["Florida"])
+
+qmplot(Florida.longitude, Florida.latitude, data = floridaDF , colour = I('red'),  size = I(2))
+```
+
+## Gun Violence and partisan control of the Senate
+Does the political party controlling the Senate have any impact on number of individuals killed in that state? 
+```{r}
+#######################################################
+##             GUN VIOLENCE 2013 - 2018              ##
+## https://www.kaggle.com/jameslko/gun-violence-data ##
+#######################################################
+
+gunViolence_kag <- read.csv("gun-violence-data_01-2013_03-2018.csv", header = T, na.strings = c("", " ", "N/A"))
+
+head(gunViolence_kag)
+
+
+keepCols <- c(2:4, 6:7)
+StategunViolence_kag <- gunViolence_kag[, keepCols]
+head(StategunViolence_kag)
+
+gunViolence_numKilled.State <- aggregate(n_killed ~ state, data = StategunViolence_kag, FUN = sum)
+
+gunViolence_numKilled.State <- as.data.frame(gunViolence_numKilled.State)
+gunViolence_numKilled.State <- gunViolence_numKilled.State[order(-gunViolence_numKilled.State[,"n_killed"]),]
+
+library(RColorBrewer)
+
+## Red or Blue States (partisan control of state senates) - senate laws
+## https://ballotpedia.org/Partisan_composition_of_state_legislatures
+
+BlueStates <- c('California',	'Delaware',	'Hawaii',	'New Jersey',	'Oregon',	'Rhode Island',	'Washington')
+
+RedStates <- c('Alabama',	'Alaska',	'Arizona',	'Arkansas',	'Florida',	'Georgia',	'Idaho',	'Indiana',	'Iowa',	'Kansas',	'Kentucky',	'Michigan',		'Mississippi',	'Missouri',	'Nebraska',	'New Hampshire',	'North Dakota',	'Ohio',	'Oklahoma',	'South Carolina',	'South Dakota',	'Tennessee',	'Texas',	'Utah',	'West Virginia',	'Wisconsin',	'Wyoming')
+
+PurpleStates <- c('Colorado', 'Connecticut', 'Illinois', 'Maine',	'Maryland', 'Louisiana', 'Massachusetts', 'Minnesota', 'Montana' ,'Nevada',	'New Mexico',	'New York',	'North Carolina','Pennsylvania',	'Vermont',	'Virginia')
+
+AllStates <- c('Alabama',	'Alaska',	'Arizona',	'Arkansas',	'Florida',	'Georgia',	'Hawaii',	'Idaho',	'Indiana',	'Iowa',	'Kansas',	'Kentucky',	'Louisiana',	'Michigan',	'Minnesota',	'Mississippi',	'Missouri',	'Montana'	,'Nebraska',	'New Hampshire',	'North Carolina',	'North Dakota',	'Ohio',	'Oklahoma'	,'Pennsylvania',	'South Carolina',	'South Dakota',	'Tennessee',	'Texas',	'Utah',	'West Virginia',	'Wisconsin',	'Wyoming', 'California',	'Colorado',	'Connecticut',	'Delaware',	'Illinois',	'Maine',	'Maryland',	'Massachusetts',	'Nevada',	'New Jersey',	'New Mexico',	'New York',	'Oregon',	'Rhode Island',	'Vermont',	'Virginia',	'Washington')
+
+StateParty <- data.frame(AllStates)
+
+gunViolence_numKilled.State[1] <- lapply(gunViolence_numKilled.State[1], as.character)
+# gunViolence_numKilled.State[3] <- lapply(gunViolence_numKilled.State[3], as.character)
+
+for ( i in 1:nrow(gunViolence_numKilled.State)){
+  if (gunViolence_numKilled.State$state[i] %in% BlueStates){
+    gunViolence_numKilled.State$polParty[i] <- "Blue"
+  }
+  else if (gunViolence_numKilled.State$state[i] %in% RedStates){
+    gunViolence_numKilled.State$polParty[i] <- "Red"
+  }
+  else if (gunViolence_numKilled.State$state[i] %in% PurpleStates){
+    gunViolence_numKilled.State$polParty[i] <- "Purple"
+  }
+}
+
+gunViolence_numKilled.State[3] <- lapply(gunViolence_numKilled.State[3], as.factor)
+gunViolence_numKilled.State <- as.data.frame(gunViolence_numKilled.State)
+
+gunViolence_numKilled.State <- gunViolence_numKilled.State[gunViolence_numKilled.State$state != 	"District of Columbia",]
+
+
+######################################################
+# Total Number killed '13-'18 by State (& pol party) #
+######################################################
+
+ggplot(data = gunViolence_numKilled.State, 
+       aes(x = reorder(state, n_killed), y=n_killed), colour = 
+       as.factor(gunViolence_numKilled.State$polParty)) + 
+  geom_bar(stat = "identity", 
+           aes(fill = polParty)) + 
+  coord_flip() +
+  theme_minimal() +
+  ggtitle("Individuals Killed due to Gun Violence per State (2013-2018)") +
+  xlab("Total Number Killed") +
+  ylab("State") +
+  scale_x_discrete(limits = rev(levels(gunViolence_numKilled.State$state))) +
+  geom_text(aes(label=n_killed), 
+            position=position_dodge(width=0.9),
+            hjust=-0.25, size = 2.5) +
+  scale_fill_manual(values = c("blue", "purple", "red"), labels = c("Democratic", "Divided", "Republican")) +
+  guides(fill=guide_legend(title="Political Party \n(partisan control of Senate)")) +
+  theme(legend.title = element_text(size = 8),
+        legend.background = element_rect(fill = "white"),
+        legend.position = c(0.85, 0.15))
+  
+```
+
+## Hypothesis Testing
+
+We will use ANOVA to analyze since our variable of interest "political party" has more than 2 levels. If we just had Dem and Rep, then we would do t-test
+
+```{r}
+######################
+# Hypothesis Testing #
+######################
+
+#################
+# 1 - WAY ANOVA #
+#################
+
+gunViolence_numKilled.State
+
+
+# one way table
+table(gunViolence_numKilled.State$polParty)
+
+# saving the same table into a new variable for anova 
+anova_GV_nk_state <- gunViolence_numKilled.State[-1]
+
+# Visualizing differences with side by side boxplots
+plot(n_killed ~ polParty, data = anova_GV_nk_state, 
+     col = c("steelblue1", "mediumorchid1", "red2"),
+     xlab = "Partisan Control of the Senate", 
+     ylab = "Total number killed",
+     names = c("Democratic" ,"Divided", "Republican"))
+
+# lets try to normalize 
+#define Min-Max normalization function
+min_max_norm <- function(x) {
+    (x - min(x)) / (max(x) - min(x))
+  }
+
+anova_GV_nk_state_norm <- anova_GV_nk_state
+anova_GV_nk_state_norm[1] <- as.data.frame(lapply(anova_GV_nk_state_norm[1], min_max_norm))
+
+head(anova_GV_nk_state_norm)
+
+# ANOVA
+polParty.aov <- aov(n_killed ~ polParty, data = anova_GV_nk_state_norm)
+summary(polParty.aov)
+    # high p-value suggests that all of the variances are the same and we fail to reject our null 
+
+
+library(ggpubr)
+# look at normalization of the data 
+#   normal data is a stipulation of the anova test
+qqb4 <- ggqqplot(gunViolence_numKilled.State$n_killed, main = "Total killed non-normalized") 
+qqafter <- ggqqplot(anova_GV_nk_state_norm$n_killed, main = "Total killed normalized")
+
+densb4 <- ggdensity(gunViolence_numKilled.State$n_killed, main = "Total killed non-normalized")
+densafter <- ggdensity(anova_GV_nk_state_norm$n_killed, main = "Total killed normalized")
+
+ggarrange(qqb4, qqafter, densb4, densafter, ncol = 2, nrow = 2)
+
+
+
+
+plot(n_killed ~ polParty, data = anova_GV_nk_state_norm, 
+     col = c("steelblue1", "mediumorchid1", "red2"),
+     xlab = "Partisan Control of the Senate", 
+     ylab = "Total number killed",
+     names = c("Democratic" ,"Divided", "Republican"))
+
+polParty.aov.norm <- aov(n_killed ~ polParty, data = anova_GV_nk_state_norm)
+summary(polParty.aov.norm)
+
+```
+
+
+When anova normality conditions are not met fully
+```{r}
+##################
+# KRUSKAL WALLIS #
+##################
+
+anova_GV_nk_state
+
+# Mean plots
+ggline(anova_GV_nk_state, x = "polParty", y = "n_killed", 
+       add = c("mean_se", "jitter"), 
+       order = c("Blue", "Purple", "Red"),
+       ylab = "Total number killed", xlab = "Political ")
+
+# kruskal test
+kruskal.test(n_killed ~ polParty, data = anova_GV_nk_state)
+
+```
+
+p-value is greater than significance level of 0.05 we can conclude that there is not a significant differences between the political party.
+
+
+Kruskal-Wallis test by rank is a non-parametric alternative to one-way ANOVA test, which extends the two-samples Wilcoxon test in the situation where there are more than two groups. It’s recommended when the assumptions of one-way ANOVA test are not met. http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r
+
+
+## Wilcoxon test 
+
+The unpaired two-samples Wilcoxon test (also known as Wilcoxon rank sum test or Mann-Whitney test) is a non-parametric alternative to the unpaired two-samples t-test, which can be used to compare two independent groups of samples. It’s used when your data are not normally distributed.
+http://www.sthda.com/english/wiki/unpaired-two-samples-wilcoxon-test-in-r
+```{r}
+# Copy dataframe
+t_GV_nk_state <- gunViolence_numKilled.State
+
+# get rid of divided states (purple states)
+t_GV_nk_state <- t_GV_nk_state[t_GV_nk_state$polParty != "Purple",]
+t_GV_nk_state <- t_GV_nk_state[-1]
+
+wilcox.test(n_killed ~ polParty , data = t_GV_nk_state, exact = F)
+wilcox.test(n_killed ~ polParty , data = t_GV_nk_state, exact = F, alternative = "less")
+```
+
+
+High p-value again 
+
+
+
+
+
